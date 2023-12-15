@@ -49,12 +49,17 @@ const checkGoogleToken = async (token, method, userEmail) => {
     const currentTimestampSec = Date.now() / 1000;
 
     // Comprueba si los datos del token ya están en el log
-    if (tokenData === null) {   // En caso de que no lo esté
+    if (tokenData == null) {   // En caso de que no lo esté
         const res = await verifyGoogleToken(token); // Se verifica mediante la API REST de Google
         if (!res.error) {
             // Si no hay ningún error se guarda la información del token en el log
             const tokenExpirationTimestamp = currentTimestampSec + res.expires_in;
-            tokenLog.push({token: token, expiration: tokenExpirationTimestamp, email: res.email});
+            const newTokenData = {token: token, expiration: tokenExpirationTimestamp, email: res.email};
+            tokenLog.push(newTokenData);
+
+            /* Si el token se ha verificado con éxito, se comprueba que el usuario que ha enviado el token
+            * tiene permisos para realizar la operación */
+            return checkPermission(newTokenData, method, userEmail)? 'ok' : 'No tiene permiso para realizar esta operación';
         } else {
             // Si hay error se devuelve el mensaje informativo
             return 'Token Error: ' + res.error_description;
@@ -66,11 +71,11 @@ const checkGoogleToken = async (token, method, userEmail) => {
             tokenLog.splice(tokenData.index, 1);
             return 'El token ha expirado.';
         }
-    }
 
-    /* Si el token se ha verificado con éxito, se comprueba que el usuario que ha enviado el token
-    * tiene permisos para realizar la operación */
-    return checkPermission(tokenData.tokenData, method, userEmail)? 'ok' : 'No tiene permiso para realizar esta operación';
+        /* Si el token se ha verificado con éxito, se comprueba que el usuario que ha enviado el token
+        * tiene permisos para realizar la operación */
+        return checkPermission(tokenData.tokenData, method, userEmail)? 'ok' : 'No tiene permiso para realizar esta operación';
+    }
 }
 
 module.exports = {checkGoogleToken}
